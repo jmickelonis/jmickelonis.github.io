@@ -1,0 +1,120 @@
+<!--
+    Copyright © 2021-2022 jmick aka SoftPrawn.
+    
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+<html>
+    <head>
+        <style>
+
+@font-face {
+    font-family: Splatoon;
+    src: url(Splatoon2.otf);
+}
+
+body {
+    background-color: green;
+}
+
+span {
+    color: white;
+    font-family: Splatoon;
+    font-weight: bold;
+}
+
+#timer {
+    text-shadow: -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000;
+    font-size: 56;
+}
+
+#enable_label {
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+        </style>
+    </head>
+    <body>
+        <span id="timer">Loading...</span>
+        <p/>
+        <span id="enable_label" style="color: white; font-weight: bold;">Enable audio:</span> <input type="checkbox" id="enable_audio" onclick="myFunction()">
+        <script type="text/javascript"><!--
+
+/* Set your offsets here. Nothing else needs to be changed. */
+var offsets = [2, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57];
+
+offsets[offsets.length] = 60 + offsets[0];
+for (var i = 0; i < offsets.length; i++)
+    offsets[i] = offsets[i] * 60;
+    
+var sounds = [];
+for (var i = 0; i < 5; i++) {
+    sounds[i] = new Audio("Count" + i + ".wav");
+    sounds[i].volume = 0.25;
+}
+
+var element = document.getElementById("timer");
+var delta = 0;
+
+function schedule_update() {
+    var now = Date.now() + delta;
+    var remainder = now % 1000;
+
+    if (remainder == 0)
+        update();
+    else
+        setTimeout(update, 1000 - remainder);
+}
+
+function update() {
+    var now = Date.now() + delta;
+    var second = parseInt(now / 1000);
+    var current = second % (60 * 60);
+
+    var index = 0;
+    var ready = false;
+
+    for (var i = offsets.length - 1; i >= 0; i--) {
+        var offset = offsets[i];
+        if (offset > current)
+            index = i;
+        else if (offset == current)
+            ready = true;
+        else
+            break;
+    }
+
+    var next = offsets[index];
+    var remains = next - current;
+    var minutes = parseInt(remains / 60);
+    var seconds = remains % 60;
+
+    var s = "" + minutes + ":";
+    if (seconds < 10)
+        s += "0";
+    s += seconds;
+    
+    if ((ready || minutes == 0 && seconds <= 4) && document.getElementById("enable_audio").checked)
+        sounds[seconds].play();
+
+    element.innerHTML = "Salmon time: " + s;
+    schedule_update();
+}
+
+function on_datetime_received(datetime) {
+    delta = datetime - Date.now();
+    schedule_update();
+}
+
+/* Fetch the current datetime from worldtimeapi, and use it to synchronize our local clock with. */
+fetch('https://worldtimeapi.org/api/ip')
+    .then(res => res.json())
+    .then(out => on_datetime_received(Date.parse(out.datetime)))
+    .catch(err => { throw err });
+
+        --></script>
+    </body>
+</html>
